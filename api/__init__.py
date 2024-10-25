@@ -1,0 +1,18 @@
+from flask import Flask
+
+from .config import Config
+
+def create_app(config_class=Config):
+    app = Flask(__name__)
+    app.config.from_object(config_class)
+
+    from .services import db_service
+    db_service.init_app(app)
+
+    from .blueprints import auth
+    app.register_blueprint(auth.bp)
+
+    from .blueprints import news
+    app.register_blueprint(news.bp)
+
+    return app
