@@ -32,7 +32,7 @@ def index():
         if type == "AUDIO":
             try: 
                 audio_file = request.files['audio_file']
-                unique_audio_filename = get_unique_filename(audio_file.filename)
+                asset_filename = get_unique_filename(audio_file.filename)
 
                 audio_content = audio_file.read()
                 transcript = transcribe_audio_with_diarization(audio_content)
@@ -45,8 +45,8 @@ def index():
                 return jsonify({"error": "Error transcribing audio."}), 500
             
             try:
-                upload_file(audio_content, 'scamonitor-bucket', unique_audio_filename)
-                asset_url = generate_presigned_url('scamonitor-bucket', unique_audio_filename)
+                upload_file(audio_content, 'scamonitor-bucket', asset_filename)
+                asset_url = generate_presigned_url('scamonitor-bucket', asset_filename)
                 send_email(asset_url)
             except Exception as e:
                 print(e)
@@ -91,11 +91,15 @@ def index():
     
         elif type == "IMAGE":
             image_file = request.files['image_file']
-            unique_image_filename = get_unique_filename(image_file.filename)
+            asset_filename = get_unique_filename(image_file.filename)
 
-            upload_file(image_file, 'scamonitor-bucket', unique_image_filename)
-            asset_url = generate_presigned_url('scamonitor-bucket', unique_image_filename)
-            send_email(asset_url)
+            try:
+                upload_file(image_file, 'scamonitor-bucket', asset_filename)
+                asset_url = generate_presigned_url('scamonitor-bucket', asset_filename)
+                send_email(asset_url)
+            except Exception as e:
+                print(e)
+                return jsonify({"error": "Error sending email to contact."}), 500
 
             client_gpt = OpenAI(api_key="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")
             response = client_gpt.chat.completions.create(
@@ -117,7 +121,47 @@ def index():
             max_tokens=300,
             )
 
+            message_content = response.choices[0].message.content
+            try: 
+                client = OpenAI(
+                    base_url=current_app.config["IMAGE_MODEL_URL"],
+                    api_key="hf_XXXXX"
+                )
+                vote_result = []
+                for i in range(9):
+                    chat_completion = client.chat.completions.create(
+                        model="tgi",
+                        messages=[
+                            {
+                                "role": "user",
+                                "content": "You are given the content of an email or sms message. Please determine if it is likely a scam or not. CONTENT: " + message_content
+                            }
+                        ],
+                        top_p=None,
+                        temperature=None,
+                        max_tokens=150,
+                        stream=False,
+                        seed=None,
+                        frequency_penalty=None,
+                        presence_penalty=None
+                    )   
+                    vote_result.append(chat_completion.choices[0].message.content == "no scam")
+                veredict = "no scam" if vote_result.count(True) > 3 else "scam"
+
+            except Exception as e:
+                print(e)
+                return jsonify({"error": "Error with detection model"}), 500
             
+            # Generate suggestions
+            client_gpt = OpenAI(api_key="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")
+            recommendations_request = client_gpt.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "you will receive the content of an email or message, and you will also get true if it is a scam, or false otherwise. If it is a scam, give clues on why it might be a scam. If it is not, then give clues of the transcript that suggest the legitimacy. Give four recommendations, in the format of a JSON array, separated by commas with no special characters. Just return the array, no more context needed"},
+                    {"role": "user", "content": "Content: " + message_content + " Veredict: " + veredict},
+                ]
+            )
+            recommendations = recommendations_request.choices[0].message.content
 
         # Upload new report to db
         db = get_db()
@@ -125,7 +169,7 @@ def index():
         try:
             cursor.execute(
                 'INSERT INTO reports (type, verdict, recommendations, asset_name) VALUES (%s, %s, %s, %s)',
-                (type, veredict, recommendations, unique_audio_filename)
+                (type, veredict, recommendations, asset_filename)
             )
             db.commit()
 
