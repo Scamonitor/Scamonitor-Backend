@@ -3,6 +3,7 @@ from flask import (
 )
 from api.services.db_service import get_db
 from api.services.transcript_service import transcribe_audio_with_diarization
+from api.services.email_service import send_email
 from .auth import login_required
 from openai import OpenAI
 from flask import current_app
@@ -27,6 +28,8 @@ def index():
         # Get form data
         data = request.form
         type = data.get('type')
+
+        send_email()
         
         if type == "AUDIO":
             try: 
