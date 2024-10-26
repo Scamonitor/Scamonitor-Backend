@@ -17,18 +17,18 @@ def transcribe_audio_with_diarization(audio_content):
     diarization_config = speech.SpeakerDiarizationConfig(
         enable_speaker_diarization=True,
         min_speaker_count=2,
-        max_speaker_count=3,
+        max_speaker_count=2,
     )
     config = speech.RecognitionConfig(
         encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-        sample_rate_hertz=44100,
+        sample_rate_hertz=48000,
         language_code="en-US",
         diarization_config=diarization_config,
     )
 
     # Perform speech-to-text request
     response = client.recognize(config=config, audio=audio)
-    
+
     # Process and print the results
     result = response.results[-1]
 
