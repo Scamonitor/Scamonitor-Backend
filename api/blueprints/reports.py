@@ -53,66 +53,26 @@ def index():
                 return jsonify({"error": "Error sending email to contact."}), 500
 
             try: 
-                print("TRANSCRIPT", transcript)
-                chat_completion_1 = client.chat.completions.create(
-                    model="tgi",
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": "You are an assistant that helps in scam detection of phone call transcripts. You will be given a transcript in the format Person A and Person B. I need you to identify if the transcript likely corresponds to a scam or not. ONLY ANSWER BINARY, 'scam' or 'no scam'. TRANSCRIPT: " + transcript
-                        }
-                    ],
-                    top_p=None,
-                    temperature=None,
-                    max_tokens=150,
-                    stream=False,
-                    seed=None,
-                    frequency_penalty=None,
-                    presence_penalty=None
-                )   
-                chat_completion_2 = client.chat.completions.create(
-                    model="tgi",
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": "You are an assistant that helps in scam detection of phone call transcripts. You will be given a transcript in the format Person A and Person B. I need you to identify if the transcript likely corresponds to a scam or not. ONLY ANSWER BINARY, 'scam' or 'no scam'. TRANSCRIPT: " + transcript
-                        }
-                    ],
-                    top_p=None,
-                    temperature=None,
-                    max_tokens=150,
-                    stream=False,
-                    seed=None,
-                    frequency_penalty=None,
-                    presence_penalty=None
-                )    
-                chat_completion_3 = client.chat.completions.create(
-                    model="tgi",
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": "You are an assistant that helps in scam detection of phone call transcripts. You will be given a transcript in the format Person A and Person B. I need you to identify if the transcript likely corresponds to a scam or not. ONLY ANSWER BINARY, 'scam' or 'no scam'. TRANSCRIPT: " + transcript
-                        }
-                    ],
-                    top_p=None,
-                    temperature=None,
-                    max_tokens=150,
-                    stream=False,
-                    seed=None,
-                    frequency_penalty=None,
-                    presence_penalty=None
-                )    
-
-                print("A", chat_completion_1.choices[0].message.content)
-                print("B", chat_completion_2.choices[0].message.content)
-                print("C", chat_completion_3.choices[0].message.content)
-
-                vote_1 = chat_completion_1.choices[0].message.content.lower() == "no scam"
-                vote_2 = chat_completion_2.choices[0].message.content.lower() == "no scam"
-                vote_3 = chat_completion_3.choices[0].message.content.lower() == "no scam"
-
-                vote_result = [vote_1, vote_2, vote_3]
-                veredict = "no scam" if vote_result.count(True) > 1 else "scam"
+                vote_result = []
+                for i in range(9):
+                    chat_completion = client.chat.completions.create(
+                        model="tgi",
+                        messages=[
+                            {
+                                "role": "user",
+                                "content": "You are an assistant that helps in scam detection of phone call transcripts. You will be given a transcript in the format Person A and Person B. I need you to identify if the transcript likely corresponds to a scam or not. ONLY ANSWER BINARY, 'scam' or 'no scam'. TRANSCRIPT: " + transcript
+                            }
+                        ],
+                        top_p=None,
+                        temperature=None,
+                        max_tokens=150,
+                        stream=False,
+                        seed=None,
+                        frequency_penalty=None,
+                        presence_penalty=None
+                    )   
+                    vote_result.append(chat_completion.choices[0].message.content == "no scam")
+                veredict = "no scam" if vote_result.count(True) > 3 else "scam"
 
             except Exception as e:
                 print(e)
@@ -129,6 +89,36 @@ def index():
             )
             recommendations = recommendations_request.choices[0].message.content
     
+        elif type == "IMAGE":
+            image_file = request.files['image_file']
+            unique_image_filename = get_unique_filename(image_file.filename)
+
+            upload_file(image_file, 'scamonitor-bucket', unique_image_filename)
+            asset_url = generate_presigned_url('scamonitor-bucket', unique_image_filename)
+            send_email(asset_url)
+
+            client_gpt = OpenAI(api_key="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")
+            response = client_gpt.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "You will be given an image of an email or a text sms. Please write down the sender, and the message content."},
+                    {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": asset_url 
+                    },
+                    },
+                ],
+                }
+            ],
+            max_tokens=300,
+            )
+
+            
+
         # Upload new report to db
         db = get_db()
         cursor = db.cursor(dictionary=True)
