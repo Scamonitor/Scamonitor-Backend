@@ -2,7 +2,7 @@ import io
 from google.cloud import speech
 from flask import current_app
 
-def transcribe_audio_with_diarization(audio_path):
+def transcribe_audio_with_diarization(audio_content):
     client = speech.SpeechClient.from_service_account_info({
             "type": "service_account",
             "project_id": "scamonitor",
@@ -13,12 +13,8 @@ def transcribe_audio_with_diarization(audio_path):
             "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
     })
 
-    # Load audio file
-    with io.open(audio_path, "rb") as audio_file:
-        content = audio_file.read()
-
     # Configure audio and diarization settings
-    audio = speech.RecognitionAudio(content=content)
+    audio = speech.RecognitionAudio(content=audio_content)
     diarization_config = speech.SpeakerDiarizationConfig(
         enable_speaker_diarization=True,
         min_speaker_count=2,
@@ -39,6 +35,24 @@ def transcribe_audio_with_diarization(audio_path):
 
     words_info = result.alternatives[0].words
 
-    # Printing out the output:
+    # Building the dialog format
+    speaker_dialog = {}
+    current_speaker = None
     for word_info in words_info:
-        print(f"word: '{word_info.word}', speaker_tag: {word_info.speaker_tag}")
+        speaker_tag = word_info.speaker_tag
+        word = word_info.word
+
+        # Initialize speaker dialog if not already
+        if speaker_tag != current_speaker:
+            current_speaker = speaker_tag
+            speaker_name = "Person A" if speaker_tag == 1 else "Person B"
+            if speaker_name not in speaker_dialog:
+                speaker_dialog[speaker_name] = ""
+            speaker_dialog[speaker_name] += f"{speaker_name}: {word}"
+        else:
+            speaker_dialog[speaker_name] += f" {word}"
+
+    # Join all parts for the final output
+    final_output = " ".join(speaker_dialog.values())
+
+    return final_output

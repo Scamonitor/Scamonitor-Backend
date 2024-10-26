@@ -11,3 +11,4 @@ class Config:
     DB_NAME = os.environ.get('DB_NAME')
     GCP_CLIENT_EMAIL = os.environ.get('GCP_CLIENT_EMAIL')
     GCP_PRIVATE_KEY = os.environ.get('GCP_PRIVATE_KEY').replace('\\n', '\n')
+    AUDIO_MODEL_URL = os.environ.get('AUDIO_MODEL_URL')
