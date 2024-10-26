@@ -26,12 +26,9 @@ def index():
         return jsonify({"reports": reports}), 200
 
     elif request.method == 'POST':
-        # Get form data
         data = request.form
         type = data.get('type')
 
-        
-        
         if type == "AUDIO":
             try: 
                 audio_file = request.files['audio_file']
@@ -56,16 +53,13 @@ def index():
                 return jsonify({"error": "Error sending email to contact."}), 500
 
             try: 
-                chat_completion = client.chat.completions.create(
+                print("TRANSCRIPT", transcript)
+                chat_completion_1 = client.chat.completions.create(
                     model="tgi",
                     messages=[
                         {
-                            "role": "assistant",
-                            "content": "You are an assistant that aids in scam detection in phone call transcripts. You will only answer binary: 'scam' if it is likely a scam, or 'no scam' otherwise",
-                        },
-                        {
                             "role": "user",
-                            "content": "Identify if this is a scam conversation: " + transcript
+                            "content": "You are an assistant that helps in scam detection of phone call transcripts. You will be given a transcript in the format Person A and Person B. I need you to identify if the transcript likely corresponds to a scam or not. ONLY ANSWER BINARY, 'scam' or 'no scam'. TRANSCRIPT: " + transcript
                         }
                     ],
                     top_p=None,
@@ -76,30 +70,81 @@ def index():
                     frequency_penalty=None,
                     presence_penalty=None
                 )   
+                chat_completion_2 = client.chat.completions.create(
+                    model="tgi",
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": "You are an assistant that helps in scam detection of phone call transcripts. You will be given a transcript in the format Person A and Person B. I need you to identify if the transcript likely corresponds to a scam or not. ONLY ANSWER BINARY, 'scam' or 'no scam'. TRANSCRIPT: " + transcript
+                        }
+                    ],
+                    top_p=None,
+                    temperature=None,
+                    max_tokens=150,
+                    stream=False,
+                    seed=None,
+                    frequency_penalty=None,
+                    presence_penalty=None
+                )    
+                chat_completion_3 = client.chat.completions.create(
+                    model="tgi",
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": "You are an assistant that helps in scam detection of phone call transcripts. You will be given a transcript in the format Person A and Person B. I need you to identify if the transcript likely corresponds to a scam or not. ONLY ANSWER BINARY, 'scam' or 'no scam'. TRANSCRIPT: " + transcript
+                        }
+                    ],
+                    top_p=None,
+                    temperature=None,
+                    max_tokens=150,
+                    stream=False,
+                    seed=None,
+                    frequency_penalty=None,
+                    presence_penalty=None
+                )    
 
-                print("TRANSCRIPTION", transcript)
-                print("RESULT", chat_completion.choices[0].message.content)
-                veredict = "scam"
+                print("A", chat_completion_1.choices[0].message.content)
+                print("B", chat_completion_2.choices[0].message.content)
+                print("C", chat_completion_3.choices[0].message.content)
+
+                vote_1 = chat_completion_1.choices[0].message.content.lower() == "no scam"
+                vote_2 = chat_completion_2.choices[0].message.content.lower() == "no scam"
+                vote_3 = chat_completion_3.choices[0].message.content.lower() == "no scam"
+
+                vote_result = [vote_1, vote_2, vote_3]
+                veredict = "no scam" if vote_result.count(True) > 1 else "scam"
 
             except Exception as e:
                 print(e)
                 return jsonify({"error": "Error with detection model"}), 500
             
-            recommendations = "Block the number and report it to the authorities."
-
-
-
+            # Generate suggestions
+            client_gpt = OpenAI(api_key="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")
+            recommendations_request = client_gpt.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "you will receive a transcription of a phone call, and you will also get true if it is a scam, or false otherwise. If it is a scam, give clues on why it might be a scam. If it is not, then give clues of the transcript that suggest the legitimacy. Give four recommendations, in the format of a JSON array, separated by commas with no special characters. Just return the array, no more context needed"},
+                    {"role": "user", "content": "Transcript: " + transcript + " Veredict: " + veredict},
+                ]
+            )
+            recommendations = recommendations_request.choices[0].message.content
+    
         # Upload new report to db
         db = get_db()
         cursor = db.cursor(dictionary=True)
         try:
             cursor.execute(
-                'INSERT INTO reports (type, verdict, recommendations, link) VALUES (%s, %s, %s, %s)',
-                (type, veredict, recommendations, asset_url)
+                'INSERT INTO reports (type, verdict, recommendations, asset_name) VALUES (%s, %s, %s, %s)',
+                (type, veredict, recommendations, unique_audio_filename)
             )
             db.commit()
-            
-            return jsonify({"message": "Report created."}), 201
+
+            report_id = cursor.lastrowid
+
+            cursor.execute('SELECT * FROM reports WHERE id = %s', (report_id,))
+            new_report = cursor.fetchone()
+
+            return jsonify(new_report), 201
         except Exception as e:
             print(e)  # For debugging purposes
             return jsonify({"error": "An unexpected error occurred."}), 500

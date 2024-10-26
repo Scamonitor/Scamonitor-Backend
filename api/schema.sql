@@ -15,6 +15,6 @@ CREATE TABLE reports (
     type VARCHAR(100) NOT NULL,                  -- Type of report (e.g., phishing, scam)
     verdict VARCHAR(100) NOT NULL,               -- Verdict or result of the fraud analysis (e.g., suspicious, safe)
     recommendations TEXT,                        -- Recommendations for the user
-    link VARCHAR(255),                           -- Associated link or URL (optional)
+    asset_name VARCHAR(255),                        -- unique Associated link or URL (optional)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  -- Timestamp for when the report was created
 );

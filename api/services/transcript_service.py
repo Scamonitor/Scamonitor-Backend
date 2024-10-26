@@ -1,4 +1,3 @@
-import io
 from google.cloud import speech
 from flask import current_app
 
@@ -18,41 +17,48 @@ def transcribe_audio_with_diarization(audio_content):
     diarization_config = speech.SpeakerDiarizationConfig(
         enable_speaker_diarization=True,
         min_speaker_count=2,
-        max_speaker_count=10,
+        max_speaker_count=3,
     )
     config = speech.RecognitionConfig(
         encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-        sample_rate_hertz=48000,
+        sample_rate_hertz=44100,
         language_code="en-US",
         diarization_config=diarization_config,
     )
 
     # Perform speech-to-text request
     response = client.recognize(config=config, audio=audio)
+    
     # Process and print the results
-
     result = response.results[-1]
 
     words_info = result.alternatives[0].words
 
     # Building the dialog format
-    speaker_dialog = {}
-    current_speaker = None
+    current_speaker = 1
+    speaker_map = {1: "Person A", 2: "Person B"}
+
+    conversation = []
+    current_sentence = []
     for word_info in words_info:
         speaker_tag = word_info.speaker_tag
         word = word_info.word
+        speaker_tag = min(speaker_tag, 2)
 
         # Initialize speaker dialog if not already
         if speaker_tag != current_speaker:
+            conversation.append(f"{speaker_map[current_speaker]}: " + " ".join(current_sentence))
+            # Reset for the new speaker
+            current_sentence = [word]
             current_speaker = speaker_tag
-            speaker_name = "Person A" if speaker_tag == 1 else "Person B"
-            if speaker_name not in speaker_dialog:
-                speaker_dialog[speaker_name] = ""
-            speaker_dialog[speaker_name] += f"{speaker_name}: {word}"
         else:
-            speaker_dialog[speaker_name] += f" {word}"
+            # Continue building the sentence for the current speaker
+            current_sentence.append(word)
+
+    if current_sentence:
+        conversation.append(f"{speaker_map[current_speaker]}: " + " ".join(current_sentence))
 
     # Join all parts for the final output
-    final_output = " ".join(speaker_dialog.values())
+    final_output = " ".join(conversation)
 
     return final_output
