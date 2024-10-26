@@ -12,12 +12,13 @@ def register():
     if request.method == 'POST':
         data = request.get_json()
 
-        username = data.get('username')
+        name = data.get('name')
         password = data.get('password')
-        email = data.get('email')
+        personal_email = data.get('personal_email')
+        contact_email = data.get('contact_email')
         is_admin = data.get('is_admin')
         
-        if username is None or password is None or email is None or is_admin is None:
+        if name is None or password is None or personal_email is None or contact_email is None or is_admin is None:
             return jsonify({"error": "Missing required information."}), 400
 
         db = get_db()
@@ -25,11 +26,11 @@ def register():
 
         try: 
             cursor.execute(
-                'INSERT INTO user (username, password, email, is_admin) VALUES (%s, %s, %s, %s)',
-                (username, generate_password_hash(password), email, is_admin)
+                'INSERT INTO user (name, password, personal_email, contact_email, is_admin) VALUES (%s, %s, %s, %s, %s)',
+                (name, generate_password_hash(password), personal_email, contact_email, is_admin)
             )
             db.commit()
-            cursor.execute('SELECT id, username, email, is_admin FROM user WHERE username = %s', (username,))
+            cursor.execute('SELECT id, name, personal_email, contact_email, is_admin FROM user WHERE name = %s', (name,))
             new_user = cursor.fetchone()
 
             return jsonify({"user": new_user}), 201
@@ -44,19 +45,19 @@ def register():
 def login():
     if request.method == 'POST':
         data = request.get_json()
-        username = data.get('username')
+        name = data.get('name')
         password = data.get('password')
 
         db = get_db()
         cursor = db.cursor(dictionary=True)
 
         cursor.execute(
-            'SELECT * FROM user WHERE username = %s', (username,)
+            'SELECT * FROM user WHERE name = %s', (name,)
         )
         user = cursor.fetchone()
 
         if user is None:
-            return jsonify({"error": "Invalid username."}), 400
+            return jsonify({"error": "Invalid name."}), 400
         
         if not check_password_hash(user['password'], password):
             return jsonify({"error": "Invalid password."}), 400
