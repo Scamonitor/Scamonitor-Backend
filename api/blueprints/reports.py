@@ -101,7 +101,7 @@ def index():
                 print(e)
                 return jsonify({"error": "Error sending email to contact."}), 500
 
-            client_gpt = OpenAI(api_key="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")
+            client_gpt = OpenAI(api_key=current_app.config["GPT_API_KEY"])
             response = client_gpt.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -153,7 +153,7 @@ def index():
                 return jsonify({"error": "Error with detection model"}), 500
             
             # Generate suggestions
-            client_gpt = OpenAI(api_key="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")
+            client_gpt = OpenAI(api_key=current_app.config["GPT_API_KEY"])
             recommendations_request = client_gpt.chat.completions.create(
                 model="gpt-4o",
                 messages=[

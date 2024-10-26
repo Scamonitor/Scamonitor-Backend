@@ -13,3 +13,4 @@ class Config:
     GCP_PRIVATE_KEY = os.environ.get('GCP_PRIVATE_KEY').replace('\\n', '\n')
     AUDIO_MODEL_URL = os.environ.get('AUDIO_MODEL_URL')
     IMAGE_MODEL_URL = os.environ.get('IMAGE_MODEL_URL')
+    GPT_API_KEY = os.environ.get('GPT_API_KEY')
