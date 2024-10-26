@@ -84,7 +84,7 @@ def index():
             recommendations_request = client_gpt.chat.completions.create(
                 model="gpt-4o",
                 messages=[
-                    {"role": "system", "content": "You will receive the transcription of a phone call, along with a flag indicating whether it is a scam or not. If it is a scam, give clues on why it might be a scam. If it is not, then give clues of the transcript that suggest the legitimacy. Give four recommendations tailored to older audiences, in the format of a JSON array, separated by commas with no special characters. Just return the array, no more context needed"},
+                    {"role": "system", "content": "You will receive the transcription of a phone call, along with a flag indicating whether it is a scam or not. If it is a scam, give clues on why it might be a scam. If it is not, then give clues of the transcript that suggest the legitimacy. Give your response in the format of four recommendations tailored to older audiences, contained in a JSON array, separated by commas with no special characters. Just return the JSON array, no more context needed"},
                     {"role": "user", "content": "Transcript: " + transcript + " Veredict: " + veredict},
                 ]
             )
