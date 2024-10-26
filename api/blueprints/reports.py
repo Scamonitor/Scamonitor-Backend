@@ -4,6 +4,7 @@ from flask import (
 from api.services.db_service import get_db
 from api.services.transcript_service import transcribe_audio_with_diarization
 from api.services.email_service import send_email
+from api.services.file_service import get_unique_filename, upload_file, generate_presigned_url
 from .auth import login_required
 from openai import OpenAI
 from flask import current_app
@@ -29,11 +30,13 @@ def index():
         data = request.form
         type = data.get('type')
 
-        send_email()
+        
         
         if type == "AUDIO":
             try: 
                 audio_file = request.files['audio_file']
+                unique_audio_filename = get_unique_filename(audio_file.filename)
+
                 audio_content = audio_file.read()
                 transcript = transcribe_audio_with_diarization(audio_content)
                 client = OpenAI(
@@ -43,6 +46,14 @@ def index():
             except Exception as e:
                 print(e)
                 return jsonify({"error": "Error transcribing audio."}), 500
+            
+            try:
+                upload_file(audio_content, 'scamonitor-bucket', unique_audio_filename)
+                asset_url = generate_presigned_url('scamonitor-bucket', unique_audio_filename)
+                send_email(asset_url)
+            except Exception as e:
+                print(e)
+                return jsonify({"error": "Error sending email to contact."}), 500
 
             try: 
                 chat_completion = client.chat.completions.create(
@@ -68,21 +79,23 @@ def index():
 
                 print("TRANSCRIPTION", transcript)
                 print("RESULT", chat_completion.choices[0].message.content)
+                veredict = "scam"
+
             except Exception as e:
                 print(e)
-                return jsonify({"error": "Error with predictive model"}), 500
+                return jsonify({"error": "Error with detection model"}), 500
+            
+            recommendations = "Block the number and report it to the authorities."
 
+
+
+        # Upload new report to db
         db = get_db()
         cursor = db.cursor(dictionary=True)
-
-        veredict="SPAM"
-        recommendations="Block the number"
-        link="https://www.google.com"
         try:
-            # Insert the new report into the database
             cursor.execute(
                 'INSERT INTO reports (type, verdict, recommendations, link) VALUES (%s, %s, %s, %s)',
-                (type, veredict, recommendations, link)
+                (type, veredict, recommendations, asset_url)
             )
             db.commit()
             
