@@ -7,13 +7,13 @@ from api.services.email_service import send_email
 from api.services.file_service import get_unique_filename, upload_file, generate_presigned_url
 from .auth import login_required
 from openai import OpenAI
-from flask import current_app
+from flask import current_app, g
 
 
 bp = Blueprint('reports', __name__, url_prefix='/reports')
 
 @bp.route('/', methods=('GET', 'POST'))
-# @login_required
+@login_required
 def index():
     if request.method == 'GET':
         db = get_db()
@@ -47,7 +47,7 @@ def index():
             try:
                 upload_file(audio_content, 'scamonitor-bucket', asset_filename)
                 asset_url = generate_presigned_url('scamonitor-bucket', asset_filename)
-                send_email(asset_url)
+                send_email(asset_url, g.user['contact_email'])
             except Exception as e:
                 print(e)
                 return jsonify({"error": "Error sending email to contact."}), 500
@@ -96,7 +96,7 @@ def index():
             try:
                 upload_file(image_file, 'scamonitor-bucket', asset_filename)
                 asset_url = generate_presigned_url('scamonitor-bucket', asset_filename)
-                send_email(asset_url)
+                send_email(asset_url, g.user['contact_email'])
             except Exception as e:
                 print(e)
                 return jsonify({"error": "Error sending email to contact."}), 500

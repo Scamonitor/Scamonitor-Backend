@@ -14,3 +14,4 @@ class Config:
     AUDIO_MODEL_URL = os.environ.get('AUDIO_MODEL_URL')
     IMAGE_MODEL_URL = os.environ.get('IMAGE_MODEL_URL')
     GPT_API_KEY = os.environ.get('GPT_API_KEY')
+    SENDER_EMAIL_PASSWORD = os.environ.get('SENDER_EMAIL_PASSWORD')

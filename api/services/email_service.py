@@ -1,12 +1,12 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from flask import current_app
 
 # Email details
-def send_email(asset_url):
+def send_email(asset_url, receiver_email):
     sender_email = "logarithmus.team@gmail.com"
-    receiver_email = "carlosalbertopaez2002@gmail.com"
-    password = "vfmh wzxd mgoz qqvt"
+    password = current_app.config["SENDER_EMAIL_PASSWORD"]
 
     # Create the email
     message = MIMEMultipart()
