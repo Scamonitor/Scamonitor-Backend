@@ -47,7 +47,7 @@ def index():
             try:
                 upload_file(audio_content, 'scamonitor-bucket', asset_filename)
                 asset_url = generate_presigned_url('scamonitor-bucket', asset_filename)
-                send_email(asset_url, g.user['contact_email'])
+                send_email(g.user["name"], asset_url, g.user['contact_email'])
             except Exception as e:
                 print(e)
                 return jsonify({"error": "Error sending email to contact."}), 500
@@ -96,7 +96,7 @@ def index():
             try:
                 upload_file(image_file, 'scamonitor-bucket', asset_filename)
                 asset_url = generate_presigned_url('scamonitor-bucket', asset_filename)
-                send_email(asset_url, g.user['contact_email'])
+                send_email(g.user["name"], asset_url, g.user['contact_email'])
             except Exception as e:
                 print(e)
                 return jsonify({"error": "Error sending email to contact."}), 500

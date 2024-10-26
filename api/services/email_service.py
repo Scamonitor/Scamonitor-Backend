@@ -4,7 +4,7 @@ from email.mime.text import MIMEText
 from flask import current_app
 
 # Email details
-def send_email(asset_url, receiver_email):
+def send_email(receiver_name, asset_url, receiver_email):
     sender_email = "logarithmus.team@gmail.com"
     password = current_app.config["SENDER_EMAIL_PASSWORD"]
 
@@ -16,16 +16,20 @@ def send_email(asset_url, receiver_email):
 
     # Body of the email
     body = f"""
-        <html>
-            <body>
-                <h2>Hello,</h2>
-                <p>You are receiving this email because you are the trusted contact of <strong>USER</strong>.</p>
-                <p>They submitted a scam analysis report, with the given asset:</p>
-                <p><a href="{asset_url}">Link to file</a></p>
-                <br>
-                <p>Thank you,<br>Logarithmus Team</p>
-            </body>
-        </html>
+            <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.5; color: #333;">
+                    <h2 style="color: #0056b3;">To whom it may concern,</h2>
+                    <p>You are receiving this email as a trusted contact for <strong>{receiver_name}</strong>.</p>
+                    <p>They have submitted a scam analysis report related to the following asset:</p>
+                    <p>
+                        <a href="{asset_url}" style="color: #0056b3; text-decoration: none;">Access the report</a>
+                    </p>
+                    <p>If you believe that something concerning may have occurred, please do not hesitate to reach out to them directly.</p>
+                    <br>
+                    <p>Thank you for your attention to this important matter.</p>
+                    <p>Best regards,<br>The Scamonitor Team</p>
+                </body>
+            </html>
         """
     message.attach(MIMEText(body, "html"))
 
