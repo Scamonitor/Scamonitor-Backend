@@ -15,4 +15,7 @@ def create_app(config_class=Config):
     from .blueprints import news
     app.register_blueprint(news.bp)
 
+    from .blueprints import reports
+    app.register_blueprint(reports.bp)
+
     return app
