@@ -60,7 +60,7 @@ def index():
                         messages=[
                             {
                                 "role": "user",
-                                "content": "You are an assistant that helps in scam detection of phone call transcripts. You will be given a transcript in the format Person A and Person B. I need you to identify if the transcript likely corresponds to a scam or not. ONLY ANSWER BINARY, 'scam' or 'no scam'. TRANSCRIPT: " + transcript
+                                "content": "You are an assistant specialized in detecting potential scams targeting older adults through phone calls. Given a transcript formatted as 'Person A: [text]' and 'Person B: [text]', your task is to determine whether the call is likely a scam or not. Please respond with a single word: 'scam' if it is a scam, or 'no scam' if it is not. TRANSCRIPT: " + transcript
                             }
                         ],
                         top_p=None,
@@ -73,6 +73,7 @@ def index():
                     )   
                     vote_result.append(chat_completion.choices[0].message.content == "no scam")
                 veredict = "no scam" if vote_result.count(True) > 3 else "scam"
+                print("TRANSCRIPT: ", transcript)
 
             except Exception as e:
                 print(e)

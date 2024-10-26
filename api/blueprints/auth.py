@@ -45,14 +45,14 @@ def register():
 def login():
     if request.method == 'POST':
         data = request.get_json()
-        name = data.get('name')
+        email = data.get('personal_email')
         password = data.get('password')
 
         db = get_db()
         cursor = db.cursor(dictionary=True)
 
         cursor.execute(
-            'SELECT * FROM user WHERE name = %s', (name,)
+            'SELECT * FROM user WHERE personal_email = %s', (email,)
         )
         user = cursor.fetchone()
 
@@ -63,6 +63,7 @@ def login():
             return jsonify({"error": "Invalid password."}), 400
         
         session.clear()
+        session.permanent = True
         session['user_id'] = user['id']
         return jsonify({"user": user}), 200
 

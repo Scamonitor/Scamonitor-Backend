@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+import datetime
 
 load_dotenv()
 
@@ -15,3 +16,9 @@ class Config:
     IMAGE_MODEL_URL = os.environ.get('IMAGE_MODEL_URL')
     GPT_API_KEY = os.environ.get('GPT_API_KEY')
     SENDER_EMAIL_PASSWORD = os.environ.get('SENDER_EMAIL_PASSWORD')
+
+    SESSION_PERMANENT = True
+    PERMANENT_SESSION_LIFETIME = datetime.timedelta(days=1)
+    SESSION_COOKIE_SAMESITE = "None"
+    SESSION_COOKIE_SECURE = True  
+    SESSION_COOKIE_PATH = '/'
